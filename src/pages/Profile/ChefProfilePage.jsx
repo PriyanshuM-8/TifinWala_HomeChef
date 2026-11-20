@@ -76,7 +76,10 @@ export const ChefProfilePage = () => {
         foodCategories: Array.isArray(chefProfile.foodCategories)
           ? chefProfile.foodCategories.join(', ')
           : chefProfile.foodCategories || '',
-        fssaiLicenseNumber: chefProfile.foodSafetyDetails?.fssaiLicenseNumber || '',
+        fssaiLicenseNumber:
+          typeof chefProfile.foodSafetyDetails === 'object'
+            ? chefProfile.foodSafetyDetails?.fssaiLicenseNumber || ''
+            : chefProfile.foodSafetyDetails || '',
       });
 
       // Extract existing GeoJSON coordinates [longitude, latitude]
@@ -205,6 +208,14 @@ export const ChefProfilePage = () => {
       const lngNum = parseFloat(lng);
       const radiusNum = parseInt(serviceRadiusKm, 10);
 
+      const hasValidCoords =
+        !isNaN(lngNum) &&
+        !isNaN(latNum) &&
+        lngNum >= -180 &&
+        lngNum <= 180 &&
+        latNum >= -90 &&
+        latNum <= 90;
+
       const payload = {
         kitchenName: formData.kitchenName.trim(),
         ownerName: formData.ownerName.trim(),
@@ -219,14 +230,17 @@ export const ChefProfilePage = () => {
           .split(',')
           .map((c) => c.trim())
           .filter(Boolean),
-        foodSafetyDetails: {
-          ...chefProfile?.foodSafetyDetails,
-          fssaiLicenseNumber: formData.fssaiLicenseNumber.trim(),
-        },
-        location: {
-          type: 'Point',
-          coordinates: [lngNum, latNum], // [longitude, latitude]
-        },
+        foodSafetyDetails: formData.fssaiLicenseNumber
+          ? formData.fssaiLicenseNumber.trim()
+          : typeof chefProfile?.foodSafetyDetails === 'string'
+          ? chefProfile.foodSafetyDetails
+          : '',
+        ...(hasValidCoords && {
+          location: {
+            type: 'Point',
+            coordinates: [lngNum, latNum], // [longitude, latitude]
+          },
+        }),
         serviceRadiusKm: radiusNum || 10,
       };
 
